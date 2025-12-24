@@ -19,23 +19,27 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # 1. Entra no diretório correto usando caminho absoluto
-            mkdir -p /home/cloud_user/DEMO-REACT
+            # 1. Entra no diretório absoluto
             cd /home/cloud_user/DEMO-REACT
 
-            # 2. Inicializa o Git no servidor se não existir
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/${{ github.repository }}.git .
-            else
-              # Se já existir, reseta qualquer alteração local e puxa o novo
-              git fetch --all
-              git reset --hard origin/main
-              git pull origin main
-            fi
+            # 2. Atualiza o código garantindo sincronia com o GitHub
+            git fetch --all
+            git reset --hard origin/main
+            git pull origin main
 
-            # 3. Sobe os containers (Baseado na sua estrutura de pastas)
-            # O docker-compose.yml deve estar na raiz /DEMO-REACT/
-            docker compose up -d --build
+            # 3. Reinicialização Forçada do Docker
+            echo "Parando containers antigos..."
+            docker compose down --remove-orphans
 
-            # 4. Limpa imagens órfãs para não encher o disco do servidor
+            echo "Iniciando build e subindo novos containers..."
+            # --build: reconstrói as imagens
+            # --force-recreate: garante que novos containers sejam criados mesmo se nada mudou no YAML
+            # -d: roda em segundo plano
+            docker compose up -d --build --force-recreate
+
+            # 4. Verificação de Status (para log do GitHub Actions)
+            echo "Verificando containers ativos:"
+            docker compose ps
+
+            # 5. Limpeza de lixo (imagens antigas que ficaram sem nome)
             docker image prune -f

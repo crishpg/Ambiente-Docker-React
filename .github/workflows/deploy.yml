@@ -1,0 +1,36 @@
+name: Deploy para o Servidor Ubuntu
+
+on:
+  push:
+    branches:
+      - main # Executa sempre que houver push na branch principal
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v3
+
+      - name: Executar Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Entra na pasta do projeto (ajuste o caminho se necessário)
+            cd /home/cloud_user/DEMO-REACT
+            
+            # Se a pasta estiver vazia, clona. Se não, atualiza.
+            if [ -d ".git" ]; then
+              git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }}.git .
+            fi
+            
+            # Sobe o ambiente usando os comandos que testamos
+            docker compose up -d --build
+            
+            # Limpeza opcional (remove imagens antigas sem uso)
+            docker image prune -f

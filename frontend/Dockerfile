@@ -1,14 +1,12 @@
 FROM node:18-alpine
-
 WORKDIR /app
 
-# Copia apenas os arquivos de dependências primeiro (otimiza cache)
+# Instala as dependências usando os arquivos que estão na sua pasta
 COPY package*.json ./
 RUN npm install
 
-# Copia o restante do código
+# COPIA o seu código editado (o App.js com os cachorros) para o container
 COPY . .
 
 EXPOSE 3000
-
 CMD ["npm", "start"]

@@ -3,7 +3,7 @@ name: Deploy para o Servidor Ubuntu
 on:
   push:
     branches:
-      - main # Executa sempre que houver push na branch principal
+      - main
 
 jobs:
   deploy:
@@ -19,18 +19,23 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Entra na pasta do projeto (ajuste o caminho se necessário)
+            # 1. Entra no diretório correto usando caminho absoluto
+            mkdir -p /home/cloud_user/DEMO-REACT
             cd /home/cloud_user/DEMO-REACT
-            
-            # Se a pasta estiver vazia, clona. Se não, atualiza.
-            if [ -d ".git" ]; then
-              git pull origin main
-            else
+
+            # 2. Inicializa o Git no servidor se não existir
+            if [ ! -d ".git" ]; then
               git clone https://github.com/${{ github.repository }}.git .
+            else
+              # Se já existir, reseta qualquer alteração local e puxa o novo
+              git fetch --all
+              git reset --hard origin/main
+              git pull origin main
             fi
-            
-            # Sobe o ambiente usando os comandos que testamos
+
+            # 3. Sobe os containers (Baseado na sua estrutura de pastas)
+            # O docker-compose.yml deve estar na raiz /DEMO-REACT/
             docker compose up -d --build
-            
-            # Limpeza opcional (remove imagens antigas sem uso)
+
+            # 4. Limpa imagens órfãs para não encher o disco do servidor
             docker image prune -f
